@@ -5,12 +5,12 @@ func _enter_tree():
 	var gui = get_editor_interface().get_base_control()
 	add_custom_type(
 		"StateMachine", "Node",
-		preload("res://addons/godot-state-machine-cs/GodotStateMachine.cs"),
+		preload("res://addons/GodotStateMachineCS/GodotStateMachine.cs"),
 		gui.get_icon("Script" ,"EditorIcons")
 	)
 	add_custom_type(
 		"State", "Node",
-		preload("res://addons/godot-state-machine-cs/State.cs"),
+		preload("res://addons/GodotStateMachineCS/State.cs"),
 		gui.get_icon("Script", "EditorIcons")
 	)
 
