@@ -7,8 +7,10 @@ public class GodotStateMachine : Node
 	public Dictionary<String, State> States = new Dictionary<String, State>();
 	public State CurrentState;
 	public String CurrentStateName;
-	public Stack<State> StateStack = new Stack<State>();
-	public delegate void StateChanged(Stack<State> StateStack);
+	public Godot.Collections.Array<State> StateStack = new Godot.Collections.Array<State>();
+	
+	[Signal]
+	public delegate void StateChanged(Godot.Collections.Array<State> StateStack);
 
 	public override void _Ready()
 	{
@@ -56,11 +58,12 @@ public class GodotStateMachine : Node
 		{
 			if (push)
 			{
-				StateStack.Push(CurrentState);
+				StateStack.Add(CurrentState);
 			}
-			StateStack.Push(States[NextState]);
+			StateStack.Add(States[NextState]);
 		}
-		CurrentState = StateStack.Pop();
+		CurrentState = StateStack[StateStack.Count - 1];
+		StateStack.RemoveAt(StateStack.Count - 1);
 		CurrentState.Enter();
 		EmitSignal(nameof(StateChanged), StateStack);
 	}
