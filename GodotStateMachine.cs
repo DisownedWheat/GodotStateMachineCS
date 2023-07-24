@@ -1,100 +1,32 @@
 using Godot;
 using System;
-using System.Collections.Generic;
 
-using StateStack = Godot.Collections.Array<State>;
-
-public class GodotStateMachine : Node
+[GlobalClass]
+public abstract partial class StateMachine<T> : Node
 {
-    // Sets the default state
-    [Export]
-    public NodePath DefaultState;
-    // Sets whether we revert to the default state whenever the current state is null
-    [Export]
-    public bool RevertToDefaultState = false;
-
-    public State DefaultStateObj { get; private set; }
-
-    public Dictionary<String, State> States = new Dictionary<String, State>();
-    public State CurrentState;
-    public String CurrentStateName;
-    public StateStack StateStack = new StateStack();
+    public T State;
+    public T PreviousState;
 
     [Signal]
-    public delegate void StateChanged(State newState, StateStack StateStack);
+    public delegate void StateChangedEventHandler(ObjectWrapper<T> newState, ObjectWrapper<T> oldState);
 
-    public override void _Ready()
+    public virtual void ChangeState(T newState)
     {
-        base._Ready();
-        if (DefaultState == null)
-        {
-            var parent = GetParent<Spatial>();
-            GD.PushError("Default state not set on node: " + parent.Name);
-            throw new Exception("Default state not set");
-        }
+        PreviousState = State;
+        State = newState;
 
-        DefaultStateObj = GetNode<State>(DefaultState);
+        if (PreviousState != null)
+            ExitState(PreviousState, newState);
+        if (newState != null)
+            EnterState(newState, PreviousState);
 
-        foreach (var item in GetChildren())
-        {
-            if (!(item is State))
-            {
-                continue;
-            }
-            var child = item as State;
-            States.Add(child.Name, child);
-            child.Connect(nameof(State.ChangeState), this, nameof(this.ChangeState));
-            if (child == DefaultStateObj)
-            {
-                CurrentState = child;
-            }
-        }
-
-        CurrentState.Enter();
+        var n = new ObjectWrapper<T>(newState);
+        var p = new ObjectWrapper<T>(PreviousState);
+        EmitSignal(SignalName.StateChanged, n, p);
     }
 
-    public override void _PhysicsProcess(float delta)
-    {
-        base._PhysicsProcess(delta);
-        if (CurrentState == null)
-        {
-            if (RevertToDefaultState)
-            {
-                CurrentState = DefaultStateObj;
-                CurrentState.Enter();
-            }
-            else
-            {
-                return;
-            }
-        }
-        CurrentState.Update(delta);
-    }
-
-    public void ChangeState(String NextState, bool push = false)
-    {
-
-        if ((NextState != nameof(Previous)) && !(States.ContainsKey(NextState)))
-        {
-            GD.PushError("State not in state dictionary: " + NextState.ToString());
-            return;
-        }
-
-        if (CurrentState != null)
-        {
-            CurrentState.Exit();
-        }
-        if (!(NextState == nameof(Previous)))
-        {
-            if (push)
-            {
-                StateStack.Add(CurrentState);
-            }
-            StateStack.Add(States[NextState]);
-        }
-        CurrentState = StateStack[StateStack.Count - 1];
-        StateStack.RemoveAt(StateStack.Count - 1);
-        CurrentState.Enter();
-        EmitSignal(nameof(StateChanged), CurrentState, StateStack);
-    }
+    public virtual void EnterState(T newState, T oldState) { }
+    public virtual void ExitState(T oldState, T newState) { }
+    public virtual void GetTransition(double delta) { }
+    public abstract void UpdateState(double delta);
 }

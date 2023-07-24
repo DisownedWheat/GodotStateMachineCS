@@ -1,14 +1,13 @@
 using Godot;
-using System;
 
-public class State : Node
+public abstract partial class State : Node
 {
 	[Signal]
-	public delegate void ChangeState(String NextState, bool push);
+	public delegate void ChangeStateEventHandler(string newStateName);
 
-	public virtual void Enter() { }
-	public virtual void Exit() { }
-	public virtual void HandleInput(InputEvent @event) { }
-	public virtual void Update(float delta) { }
-	public virtual void OnAnimationFinished(String AnimationName) { }
+	public abstract void Enter(State previousState);
+	public abstract void Exit(State nextState);
+	public abstract void HandleInput(InputEvent @event);
+	public abstract void Update(double delta);
+	public abstract void OnAnimationFinished(string animName);
 }
